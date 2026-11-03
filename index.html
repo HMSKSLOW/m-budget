@@ -35,11 +35,13 @@ table{width:100%;border-collapse:collapse;border-top:3px solid var(--ink);border
 th{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--hd);text-align:left;padding:10px 8px;border-bottom:1px solid var(--ink)}
 td{padding:12px 8px;border-bottom:1px dotted var(--dot);font-size:14px}tr:last-child td{border-bottom:0}
 td.l{font:16px Georgia,serif}td.m{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}th.r{text-align:right}
-td[contenteditable]:focus{outline:1px dotted var(--ink);background:#EFEADD}
+[contenteditable]:focus{outline:1px dotted var(--ink);background:#EFEADD}
 .neg{color:var(--neg)}.pos{color:var(--ok)}.oc{color:var(--ocre)}.mut{color:var(--sec)}
 .x{background:none;border:0;color:var(--hd);cursor:pointer;font-size:14px}.x:hover{color:var(--neg)}
 .bar{height:3px;background:#E4DECF;margin-top:6px}.bar i{display:block;height:100%;background:var(--ink)}
 .intro{color:var(--sec);font-size:14px;max-width:620px}
+.ci{width:19px;height:19px;vertical-align:-4px;margin-right:10px;color:var(--sec);flex:none}
+[data-ph]:empty::before{content:attr(data-ph);color:var(--hd)}[data-ph]{outline-offset:2px;min-width:40px;display:inline-block}
 footer{margin-top:60px;border-top:1px solid var(--ink);padding-top:10px}
 .rest{font-size:12px;color:var(--sec);margin-top:6px}.rest b{color:var(--ink)}.sur{font-weight:400;font-size:.85em}td.bud{cursor:text}
 #fab{display:none}.ni{display:none}
@@ -120,7 +122,7 @@ body.on-tx #fab{display:none}
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v15 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v16 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -159,6 +161,23 @@ function month(m){const t=D.tx.filter(x=>mk(x.d)===m),on=m>=(D.start||now),fx=on
 const spentCat=c=>D.tx.filter(x=>mk(x.d)===now&&x.t=='dep'&&x.c==c).reduce((s,x)=>s+ +x.a,0)+D.fix.filter(x=>x.c==c).reduce((s,x)=>s+ +x.a,0);
 let ch={};function chart(id,cfg){if(!window.Chart)return;ch[id]&&ch[id].destroy();ch[id]=new Chart($(id),cfg)}
 const nbM=()=>{const[a,b]=(D.start||now).split('-').map(Number),[c,d]=now.split('-').map(Number);return Math.max(1,(c-a)*12+(d-b)+1)};
+const ICO=[[/gasoil|carbur|essence|diesel/,'<path d="M4 20V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v15M3 20h12M6 8h6M14 9h2l2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>'],
+[/boutique|station|tabac/,'<path d="M4 9l1-5h14l1 5M4 9v11h16V9M4 9h16M10 20v-5h4v5"/>'],
+[/restau|cafe|resto|livraison/,'<path d="M4 9h12v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 10h2a2 2 0 0 1 0 4h-2M8 3v3M12 3v3"/>'],
+[/course|alimen|super|marche/,'<path d="M3 9h18l-2 10H5zM8 9l3-5M16 9l-3-5"/>'],
+[/retrait|espece|cash|liquide/,'<rect x="3" y="6" width="18" height="12" rx="1"/><circle cx="12" cy="12" r="2.5"/>'],
+[/voiture|entretien|auto|garage/,'<path d="M5 16v-5l2-5h10l2 5v5M3 16h18M7 19v-3M17 19v-3M5 11h14"/>'],
+[/maison|logement|loyer|meuble/,'<path d="M3 11l9-7 9 7M5 10v10h14V10"/>'],
+[/peage|transport|taxi|train|tram/,'<path d="M8 3L5 21M16 3l3 18M12 4v3M12 11v3M12 18v2"/>'],
+[/sortie|loisir|bar|cinema/,'<path d="M7 3h10l-1 7a4 4 0 0 1-8 0zM12 14v6M8 20h8"/>'],
+[/shopping|vetement|habit/,'<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2"/>'],
+[/sante|pharma|medecin|sport/,'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>'],
+[/abonnement|telephone|inwi|internet|mobile/,'<rect x="7" y="3" width="10" height="18" rx="1.5"/><path d="M11 18h2"/>'],
+[/frais|banque|bancaire/,'<path d="M3 9l9-5 9 5M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/>'],
+[/epargne/,'<ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/>'],
+[/credit|pret|emprunt/,'<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 10h18M7 15h4"/>'],
+[/salaire|revenu|prime/,'<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>']];
+const ico=n=>{const k=String(n||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');const m=ICO.find(([r])=>r.test(k));return'<svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+(m?m[1]:'<circle cx="12" cy="12" r="7"/><path d="M9 12h6"/>')+'</svg>'};
 const kp=(l,v,c='')=>`<div class="kpi"><div class="lab">${l}</div><div class="v ${c}">${v}</div></div>`;
 function render(){
  $('subt').textContent=`${MOIS} · MONTANTS EN ${D.cur.toUpperCase()}`;
@@ -177,11 +196,11 @@ function render(){
  if(m.rev&&fxT/m.rev>.5)tips.push(`Les charges fixes représentent <b class="oc">${(fxT/m.rev*100).toFixed(0)} %</b> de tes revenus.`);
  if(!m.rev&&!D.tx.length)tips.push(`Commence par renseigner ton salaire dans l'onglet <b>Compte</b>, puis ajoute tes opérations.`);
  $('tips').innerHTML=tips.map(t=>`<div class="note">${t}</div>`).join('');
- $('ltx').innerHTML=D.tx.map((x,i)=>[x,i]).sort((a,b)=>b[0].d.localeCompare(a[0].d)).map(([x,i])=>`<tr><td class="mut">${new Date(x.d).toLocaleDateString('fr-FR')}</td><td class="l" contenteditable data-ed="tx,${i},l">${esc(x.l)}</td><td class="mut">${esc(x.c)}</td><td class="mut">${x.t=='rev'?'Revenu':x.n=='fix'?'Fixe':'Variable'}</td><td class="m ${x.t=='rev'?'pos':'neg'}" contenteditable data-ed="tx,${i},a">${x.t=='rev'?'':'−'}${x.a}</td><td><button class="x" data-del="tx,${i}">✕</button></td></tr>`).join('')||'<tr><td colspan="6" class="mut">Aucune opération pour l\'instant.</td></tr>';
- $('lfx').innerHTML=D.fix.map((x,i)=>`<tr><td class="l">${esc(x.l)}</td><td class="mut">${esc(x.c)}</td><td class="m" contenteditable data-ed="fix,${i},a">${x.a}</td><td><button class="x" data-del="fix,${i}">✕</button></td></tr>`).join('')||'<tr><td colspan="4" class="mut">Aucune charge fixe.</td></tr>';
+ $('ltx').innerHTML=D.tx.map((x,i)=>[x,i]).sort((a,b)=>b[0].d.localeCompare(a[0].d)).map(([x,i])=>`<tr><td class="mut">${new Date(x.d).toLocaleDateString('fr-FR')}</td><td class="l">${ico(x.t=='rev'?'revenu':x.c)}<span contenteditable data-ed="tx,${i},l" data-ph="${esc(x.c)}">${esc(x.l)}</span></td><td class="mut">${esc(x.c)}</td><td class="mut">${x.t=='rev'?'Revenu':x.n=='fix'?'Fixe':'Variable'}</td><td class="m ${x.t=='rev'?'pos':'neg'}" contenteditable data-ed="tx,${i},a">${x.t=='rev'?'':'−'}${x.a}</td><td><button class="x" data-del="tx,${i}">✕</button></td></tr>`).join('')||'<tr><td colspan="6" class="mut">Aucune opération pour l\'instant.</td></tr>';
+ $('lfx').innerHTML=D.fix.map((x,i)=>`<tr><td class="l">${ico(x.c)}${esc(x.l)}</td><td class="mut">${esc(x.c)}</td><td class="m" contenteditable data-ed="fix,${i},a">${x.a}</td><td><button class="x" data-del="fix,${i}">✕</button></td></tr>`).join('')||'<tr><td colspan="4" class="mut">Aucune charge fixe.</td></tr>';
  $('lct').innerHTML=D.cats.map((c,i)=>{const s=spentCat(c.n),p=c.b?Math.min(100,s/c.b*100):0,cl=c.b&&s>c.b?'neg':c.b&&s>c.b*.8?'oc':'';
   const rest=c.b-s,info=c.b?(rest>=0?`Reste <b>${f(rest)}</b>`:`Dépassé de <b class="neg">${f(-rest)}</b>`):'Aucun plafond : touche le plafond pour en fixer un';
-  return`<tr><td class="l">${esc(c.n)}</td><td class="m bud" contenteditable data-ed="cats,${i},b">${c.b}</td><td class="m ${cl}">${f(s)}${c.b?` <span class="mut sur">/ ${f(c.b)}</span>`:''}</td><td>${c.b?`<div class="bar"><i style="width:${p}%;background:${cl=='neg'?'#9B2C2C':cl=='oc'?'#A0782C':'#1C1C1C'}"></i></div>`:''}<div class="rest">${info}</div></td><td><button class="x" data-del="cats,${i}">✕</button></td></tr>`}).join('')||'<tr><td colspan="5" class="mut">Aucune catégorie.</td></tr>';
+  return`<tr><td class="l">${ico(c.n)}${esc(c.n)}</td><td class="m bud" contenteditable data-ed="cats,${i},b">${c.b}</td><td class="m ${cl}">${f(s)}${c.b?` <span class="mut sur">/ ${f(c.b)}</span>`:''}</td><td>${c.b?`<div class="bar"><i style="width:${p}%;background:${cl=='neg'?'#9B2C2C':cl=='oc'?'#A0782C':'#1C1C1C'}"></i></div>`:''}<div class="rest">${info}</div></td><td><button class="x" data-del="cats,${i}">✕</button></td></tr>`}).join('')||'<tr><td colspan="5" class="mut">Aucune catégorie.</td></tr>';
  $('ss').value=D.sal;$('sb').value=D.bank;$('sd').value=D.cur;if(!render.pj){render.pj=1;const P=D.proj||{};$('pm').value=P.pm!=null&&P.pm!==''?P.pm:Math.max(0,Math.round(sv));if(P.pr!=null)$('pr').value=P.pr;if(P.py!=null)$('py').value=P.py;if(P.po!=null)$('po').value=P.po}proj_();
 }
 const num=v=>+String(v).replace(/[^\d.,-]/g,'').replace(',','.')||0;
