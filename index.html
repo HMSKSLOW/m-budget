@@ -41,6 +41,7 @@ td[contenteditable]:focus{outline:1px dotted var(--ink);background:#EFEADD}
 .bar{height:3px;background:#E4DECF;margin-top:6px}.bar i{display:block;height:100%;background:var(--ink)}
 .intro{color:var(--sec);font-size:14px;max-width:620px}
 footer{margin-top:60px;border-top:1px solid var(--ink);padding-top:10px}
+.rest{font-size:12px;color:var(--sec);margin-top:6px}.rest b{color:var(--ink)}.sur{font-weight:400;font-size:.85em}td.bud{cursor:text}
 #fab{display:none}.ni{display:none}
 @media(max-width:760px){.cols{grid-template-columns:1fr;gap:0}}
 @media(max-width:640px){
@@ -68,8 +69,10 @@ td.l{font-size:16px}td.m{font-size:15px}.x{font-size:16px;padding:2px 4px}
 #ltx td:nth-child(6),#lfx td:nth-child(4),#lct td:nth-child(5){order:3;flex:0 0 24px;text-align:right}
 #ltx td:nth-child(1),#ltx td:nth-child(3),#ltx td:nth-child(4),#lfx td:nth-child(2){order:4;font-size:12px}
 #ltx td:nth-child(1)::after,#ltx td:nth-child(3)::after{content:" ·"}
-#lct td:nth-child(2){order:4;font-size:12px;font-weight:400;color:var(--sec);text-align:left}
-#lct td:nth-child(2)::before{content:"Budget "}#lct td:nth-child(4){order:5;flex:1 1 40%;align-self:center}
+#lct td:nth-child(3){flex:0 0 auto;max-width:60%;margin-left:auto}#lct td:nth-child(1){flex:1 1 0}
+#lct td:nth-child(4){order:4;flex:1 1 100%}
+#lct td:nth-child(2){order:5;flex:1 1 100%;font-size:13px;font-weight:400;color:var(--sec);text-align:left;padding:6px 0 0}
+#lct td:nth-child(2)::before{content:"Plafond mensuel : "}#lct td:nth-child(2)::after{content:" MAD  ✎";color:var(--hd)}
 .wrap{padding-bottom:calc(140px + env(safe-area-inset-bottom))}
 nav{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;z-index:50;justify-content:space-around;gap:0;padding:6px 2px calc(6px + env(safe-area-inset-bottom));border-top:1px solid var(--ink);border-bottom:0;overflow:visible}
 nav button{flex:1;font-size:0;letter-spacing:0;border:0;border-top:3px solid transparent;padding:9px 0 6px;margin-top:-7px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--sec);-webkit-tap-highlight-color:transparent}
@@ -103,9 +106,9 @@ body.on-tx #fab{display:none}
 <form id="ffx"><label class="lab">Libellé<input id="fl" required></label><label class="lab">Catégorie<select id="fc"></select></label><label class="lab">Montant<input type="text" inputmode="decimal" id="fa" placeholder="0"></label><button class="btn" type="button" id="bfx">Ajouter</button></form>
 <table><thead><tr><th>Libellé</th><th>Catégorie</th><th class="r">Montant mensuel</th><th></th></tr></thead><tbody id="lfx"></tbody></table></section>
 
-<section id="cat"><h2>Catégories et budgets</h2><p class="intro">Fixe un plafond mensuel par catégorie. Clique sur un budget pour le modifier.</p>
-<form id="fct"><label class="lab">Nom<input id="cn" required></label><label class="lab">Budget mensuel<input type="number" id="cb"></label><button class="btn" type="button" id="bct">Ajouter</button></form>
-<table><thead><tr><th>Catégorie</th><th class="r">Budget</th><th class="r">Dépensé</th><th style="width:28%">Consommation</th><th></th></tr></thead><tbody id="lct"></tbody></table></section>
+<section id="cat"><h2>Catégories et budgets</h2><p class="intro">Fixe un plafond mensuel par catégorie, puis ajoute tes dépenses dans « Opérations » en choisissant la catégorie : la barre se remplit toute seule. Touche un plafond pour le modifier.</p>
+<form id="fct"><label class="lab">Nom<input id="cn" required></label><label class="lab">Plafond mensuel<input type="number" id="cb" placeholder="ex. 2000"></label><button class="btn" type="button" id="bct">Ajouter</button></form>
+<table><thead><tr><th>Catégorie</th><th class="r">Plafond</th><th class="r">Dépensé</th><th style="width:30%">Reste</th><th></th></tr></thead><tbody id="lct"></tbody></table></section>
 
 <section id="proj"><h2>Projections d'épargne</h2><p class="intro">Simule ce que deviendrait ton épargne avec un versement mensuel et un rendement annuel.</p>
 <form id="fpj"><label class="lab">Épargne mensuelle<input type="number" id="pm"></label><label class="lab">Rendement annuel %<input type="number" id="pr" value="3"></label>
@@ -116,7 +119,7 @@ body.on-tx #fab{display:none}
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v9 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v10 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -166,7 +169,8 @@ function render(){
  $('ltx').innerHTML=D.tx.map((x,i)=>[x,i]).sort((a,b)=>b[0].d.localeCompare(a[0].d)).map(([x,i])=>`<tr><td class="mut">${new Date(x.d).toLocaleDateString('fr-FR')}</td><td class="l" contenteditable data-ed="tx,${i},l">${esc(x.l)}</td><td class="mut">${esc(x.c)}</td><td class="mut">${x.t=='rev'?'Revenu':x.n=='fix'?'Fixe':'Variable'}</td><td class="m ${x.t=='rev'?'pos':'neg'}" contenteditable data-ed="tx,${i},a">${x.t=='rev'?'':'−'}${x.a}</td><td><button class="x" data-del="tx,${i}">✕</button></td></tr>`).join('')||'<tr><td colspan="6" class="mut">Aucune opération pour l\'instant.</td></tr>';
  $('lfx').innerHTML=D.fix.map((x,i)=>`<tr><td class="l">${esc(x.l)}</td><td class="mut">${esc(x.c)}</td><td class="m" contenteditable data-ed="fix,${i},a">${x.a}</td><td><button class="x" data-del="fix,${i}">✕</button></td></tr>`).join('')||'<tr><td colspan="4" class="mut">Aucune charge fixe.</td></tr>';
  $('lct').innerHTML=D.cats.map((c,i)=>{const s=spentCat(c.n),p=c.b?Math.min(100,s/c.b*100):0,cl=c.b&&s>c.b?'neg':c.b&&s>c.b*.8?'oc':'';
-  return`<tr><td class="l">${esc(c.n)}</td><td class="m" contenteditable data-ed="cats,${i},b">${c.b}</td><td class="m ${cl}">${f(s)}</td><td>${c.b?`<div class="bar"><i style="width:${p}%;background:${cl=='neg'?'#9B2C2C':cl=='oc'?'#A0782C':'#1C1C1C'}"></i></div>`:'<span class="mut">—</span>'}</td><td><button class="x" data-del="cats,${i}">✕</button></td></tr>`}).join('');
+  const rest=c.b-s,info=c.b?(rest>=0?`Reste <b>${f(rest)}</b>`:`Dépassé de <b class="neg">${f(-rest)}</b>`):'Aucun plafond : touche le plafond pour en fixer un';
+  return`<tr><td class="l">${esc(c.n)}</td><td class="m bud" contenteditable data-ed="cats,${i},b">${c.b}</td><td class="m ${cl}">${f(s)}${c.b?` <span class="mut sur">/ ${f(c.b)}</span>`:''}</td><td>${c.b?`<div class="bar"><i style="width:${p}%;background:${cl=='neg'?'#9B2C2C':cl=='oc'?'#A0782C':'#1C1C1C'}"></i></div>`:''}<div class="rest">${info}</div></td><td><button class="x" data-del="cats,${i}">✕</button></td></tr>`}).join('')||'<tr><td colspan="5" class="mut">Aucune catégorie.</td></tr>';
  $('ss').value=D.sal;$('sb').value=D.bank;$('sd').value=D.cur;if(!$('pm').value)$('pm').value=Math.max(0,Math.round(sv));proj_();
 }
 const num=v=>+String(v).replace(/[^\d.,-]/g,'').replace(',','.')||0;
