@@ -122,7 +122,7 @@ body.on-tx #fab{display:none}
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v16 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v17 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -225,6 +225,9 @@ $('bst').onclick=()=>{const b=$('bst'),t=b.textContent;b.textContent='✓ Enregi
 $('exp').onclick=async()=>{try{localStorage.setItem(K+'_exp',Date.now())}catch(e){}const dl=window.claude?await claude.use('downloads'):null,data=JSON.stringify(D,null,2);if(dl){try{await dl.save({filename:'budget.json',data})}catch(e){}return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download='budget.json';a.click()};
 $('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);render.pj=0;save()}catch(x){}};r.readAsText(e.target.files[0])};
 render();
+const VER='v17';
+async function checkUpd(){try{const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});const m=(await r.text()).match(/const VER='(v\d+)'/);if(m&&m[1]!==VER){say('Nouvelle version '+m[1]+' : mise à jour…');setTimeout(()=>location.replace(location.pathname+'?v='+Date.now()),1200)}}catch(e){}}
+checkUpd();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpd()});
 try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&Date.now()-L>14*864e5)setTimeout(()=>say('Pense à exporter une sauvegarde (onglet Compte).'),1500)}catch(e){}
 (async()=>{if(!window.claude)return;try{const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;const ref=db.doc('data/users/'+id+'/budget');const s=await ref.get();if(s.exists&&s.data()){D=JSON.parse(JSON.stringify(Object.assign({},D,s.data())));['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}REF=ref;if(applySug()|applySug2())sync();render.pj=0;render()}else{REF=ref;sync()}}catch(e){}})();
 </script></body></html>
