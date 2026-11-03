@@ -120,7 +120,7 @@ body.on-tx #fab{display:none}
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v14 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v15 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -182,7 +182,7 @@ function render(){
  $('lct').innerHTML=D.cats.map((c,i)=>{const s=spentCat(c.n),p=c.b?Math.min(100,s/c.b*100):0,cl=c.b&&s>c.b?'neg':c.b&&s>c.b*.8?'oc':'';
   const rest=c.b-s,info=c.b?(rest>=0?`Reste <b>${f(rest)}</b>`:`Dépassé de <b class="neg">${f(-rest)}</b>`):'Aucun plafond : touche le plafond pour en fixer un';
   return`<tr><td class="l">${esc(c.n)}</td><td class="m bud" contenteditable data-ed="cats,${i},b">${c.b}</td><td class="m ${cl}">${f(s)}${c.b?` <span class="mut sur">/ ${f(c.b)}</span>`:''}</td><td>${c.b?`<div class="bar"><i style="width:${p}%;background:${cl=='neg'?'#9B2C2C':cl=='oc'?'#A0782C':'#1C1C1C'}"></i></div>`:''}<div class="rest">${info}</div></td><td><button class="x" data-del="cats,${i}">✕</button></td></tr>`}).join('')||'<tr><td colspan="5" class="mut">Aucune catégorie.</td></tr>';
- $('ss').value=D.sal;$('sb').value=D.bank;$('sd').value=D.cur;if(!$('pm').value)$('pm').value=Math.max(0,Math.round(sv));proj_();
+ $('ss').value=D.sal;$('sb').value=D.bank;$('sd').value=D.cur;if(!render.pj){render.pj=1;const P=D.proj||{};$('pm').value=P.pm!=null&&P.pm!==''?P.pm:Math.max(0,Math.round(sv));if(P.pr!=null)$('pr').value=P.pr;if(P.py!=null)$('py').value=P.py;if(P.po!=null)$('po').value=P.po}proj_();
 }
 const num=v=>+String(v).replace(/[^\d.,-]/g,'').replace(',','.')||0;
 function ed(i,k,v){D.tx[i][k]=k=='a'?Math.abs(num(v)):v.trim();save()}
@@ -190,7 +190,7 @@ function proj_(){const pm=+$('pm').value||0,r=(+$('pr').value||0)/1200,y=Math.ma
  for(let i=1;i<=y*12;i++){b=b*(1+r)+pm;if(i%12==0){pts.push(Math.round(b));raw.push(pm*i)}if(o&&!hit&&b>=o)hit=i}
  $('pk').innerHTML=kp(`Capital dans ${y} ans`,f(b))+kp('Intérêts gagnés',f(b-pm*y*12),'pos')+kp('Objectif atteint en',o?(hit?`${Math.floor(hit/12)} an${hit>=24?'s':''} ${hit%12} mois`:'Hors horizon'):'—',o&&!hit?'neg':'');
  chart('c3',{type:'line',data:{labels:pts.map((_,i)=>'An '+(i+1)),datasets:[{label:'Avec rendement',data:pts,borderColor:'#1C1C1C',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1C1C1C',tension:.25},{label:'Versements seuls',data:raw,borderColor:'#A0782C',borderDash:[4,4],pointRadius:0}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{x:{grid:{display:false}}}}})}
-['pm','pr','py','po'].forEach(i=>$(i).oninput=proj_);$('fpj').onsubmit=e=>e.preventDefault();
+['pm','pr','py','po'].forEach(i=>$(i).oninput=()=>{D.proj={pm:$('pm').value,pr:$('pr').value,py:$('py').value,po:$('po').value};try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}sync();proj_()});$('fpj').onsubmit=e=>e.preventDefault();
 document.addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const[k,i]=b.dataset.del.split(',');D[k].splice(+i,1);save()});
 document.addEventListener('focusout',e=>{const t=e.target.closest&&e.target.closest('[data-ed]');if(!t)return;const[k,i,f]=t.dataset.ed.split(','),v=t.innerText;if(!D[k][+i])return;D[k][+i][f]=f=='l'?v.trim():Math.abs(num(v));save()});
 document.querySelectorAll('form').forEach(F=>F.addEventListener('submit',e=>e.preventDefault()));
@@ -204,8 +204,8 @@ $('bfx').onclick=()=>{const a=Math.abs(num($('fa').value));if(!$('fl').value.tri
 $('bct').onclick=()=>{if(!$('cn').value.trim()){$('cn').focus();return}flash($('bct'));D.cats.push({n:$('cn').value.trim(),b:+$('cb').value||0});$('cn').value='';$('cb').value='';save()};
 $('bst').onclick=()=>{const b=$('bst'),t=b.textContent;b.textContent='✓ Enregistré';setTimeout(()=>b.textContent=t,1200);D.sal=+$('ss').value||0;D.bank=+$('sb').value||0;D.cur=$('sd').value||'MAD';save()};
 $('exp').onclick=async()=>{try{localStorage.setItem(K+'_exp',Date.now())}catch(e){}const dl=window.claude?await claude.use('downloads'):null,data=JSON.stringify(D,null,2);if(dl){try{await dl.save({filename:'budget.json',data})}catch(e){}return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download='budget.json';a.click()};
-$('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);save()}catch(x){}};r.readAsText(e.target.files[0])};
+$('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);render.pj=0;save()}catch(x){}};r.readAsText(e.target.files[0])};
 render();
 try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&Date.now()-L>14*864e5)setTimeout(()=>say('Pense à exporter une sauvegarde (onglet Compte).'),1500)}catch(e){}
-(async()=>{if(!window.claude)return;try{const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;const ref=db.doc('data/users/'+id+'/budget');const s=await ref.get();if(s.exists&&s.data()){D=JSON.parse(JSON.stringify(Object.assign({},D,s.data())));['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}REF=ref;if(applySug()|applySug2())sync();$('pm').value='';render()}else{REF=ref;sync()}}catch(e){}})();
+(async()=>{if(!window.claude)return;try{const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;const ref=db.doc('data/users/'+id+'/budget');const s=await ref.get();if(s.exists&&s.data()){D=JSON.parse(JSON.stringify(Object.assign({},D,s.data())));['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}REF=ref;if(applySug()|applySug2())sync();render.pj=0;render()}else{REF=ref;sync()}}catch(e){}})();
 </script></body></html>
