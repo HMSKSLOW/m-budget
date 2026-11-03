@@ -120,7 +120,7 @@ body.on-tx #fab{display:none}
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v12 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v13 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -133,6 +133,9 @@ window.addEventListener('unhandledrejection',e=>say('Erreur : '+((e.reason&&e.re
 const K='budget_hamza';let D;try{D=JSON.parse(localStorage.getItem(K))}catch(e){}
 D=D||{sal:0,bank:0,cur:'MAD',tx:[],fix:[],cats:[{n:'Alimentation',b:2000},{n:'Transport',b:800},{n:'Logement',b:0},{n:'Loisirs',b:600},{n:'Santé',b:300},{n:'Salaire',b:0},{n:'Autre',b:0}]};
 if(!D.start){const _d=new Date();D.start=_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')}
+const SUG=[['Gasoil',2000],['Restaurants & cafés',1500],['Courses',1000],['Retraits espèces',2500],['Entretien voiture',500],['Maison',500],['Péage & transport',300],['Sorties',300],['Shopping',300],['Santé',200],['Abonnements',50],['Frais bancaires',30],['Épargne',1050],['Autre',600]];
+function applySug(){if(D.sug2610)return false;SUG.forEach(([n,b])=>{const c=D.cats.find(x=>x.n.toLowerCase()===n.toLowerCase());if(!c)D.cats.push({n,b});else if(!c.b)c.b=b});D.sug2610=1;setTimeout(()=>say('Catégories ajoutées d\'après ton relevé d\'octobre. Ajuste les plafonds dans Budgets.'),1200);return true}
+if(applySug()){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}}
 let REF=null,T=null;const sync=()=>{if(!REF)return;clearTimeout(T);T=setTimeout(()=>REF.set(JSON.parse(JSON.stringify(D))).catch(()=>{}),600)};
 const $=i=>document.getElementById(i),save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}sync();render()},
 f=n=>(+n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' '+D.cur,mk=d=>d.slice(0,7),ym=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),now=ym(new Date()),
@@ -199,5 +202,5 @@ $('exp').onclick=async()=>{try{localStorage.setItem(K+'_exp',Date.now())}catch(e
 $('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);save()}catch(x){}};r.readAsText(e.target.files[0])};
 render();
 try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&Date.now()-L>14*864e5)setTimeout(()=>say('Pense à exporter une sauvegarde (onglet Compte).'),1500)}catch(e){}
-(async()=>{if(!window.claude)return;try{const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;const ref=db.doc('data/users/'+id+'/budget');const s=await ref.get();if(s.exists&&s.data()){D=JSON.parse(JSON.stringify(Object.assign({},D,s.data())));['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}REF=ref;$('pm').value='';render()}else{REF=ref;sync()}}catch(e){}})();
+(async()=>{if(!window.claude)return;try{const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;const ref=db.doc('data/users/'+id+'/budget');const s=await ref.get();if(s.exists&&s.data()){D=JSON.parse(JSON.stringify(Object.assign({},D,s.data())));['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}REF=ref;if(applySug())sync();$('pm').value='';render()}else{REF=ref;sync()}}catch(e){}})();
 </script></body></html>
