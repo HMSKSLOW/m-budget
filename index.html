@@ -73,7 +73,8 @@ td.l{font-size:16px}td.m{font-size:15px}.x{font-size:16px;padding:2px 4px}
 #lct td:nth-child(4){order:4;flex:1 1 100%}
 #lct td:nth-child(2){order:5;flex:1 1 100%;font-size:13px;font-weight:400;color:var(--sec);text-align:left;padding:6px 0 0}
 #lct td:nth-child(2)::before{content:"Plafond mensuel : "}#lct td:nth-child(2)::after{content:" MAD  ✎";color:var(--hd)}
-.wrap{padding-bottom:calc(140px + env(safe-area-inset-bottom))}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+.wrap{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:calc(140px + env(safe-area-inset-bottom))}
 nav{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;z-index:50;justify-content:space-around;gap:0;padding:6px 2px calc(6px + env(safe-area-inset-bottom));border-top:1px solid var(--ink);border-bottom:0;overflow:visible}
 nav button{flex:1;font-size:0;letter-spacing:0;border:0;border-top:3px solid transparent;padding:9px 0 6px;margin-top:-7px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--sec);-webkit-tap-highlight-color:transparent}
 nav button .ni{display:block;width:26px;height:26px}
@@ -93,7 +94,7 @@ body.on-tx #fab{display:none}
 <section id="dash" class="on"><h2>Synthèse du mois</h2><p class="intro">Vue d'ensemble de tes revenus, de tes dépenses et de ton épargne pour le mois en cours.</p>
 <div class="kpis" id="kpi"></div>
 <div class="band">→  Analyse du mois</div><div id="tips" style="margin-bottom:40px"></div>
-<div class="cols"><div class="block"><div class="lab">Dépenses par catégorie</div><canvas id="c1" height="240"></canvas></div>
+<div class="cols"><div class="block"><div class="lab">Dépenses par catégorie</div><canvas id="c1" height="240"></canvas><p class="note" id="c1e" style="display:none">Aucune dépense ce mois-ci. Ajoute une opération avec le bouton « + ».</p></div>
 <div class="block"><div class="lab">Revenus et dépenses · 6 mois</div><canvas id="c2" height="240"></canvas></div></div></section>
 
 <section id="tx"><h2>Opérations</h2><p class="intro">Saisis tes dépenses et revenus au jour le jour. Clique sur un libellé ou un montant pour le modifier.</p>
@@ -119,7 +120,7 @@ body.on-tx #fab{display:none}
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v10 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v11 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -131,21 +132,22 @@ window.addEventListener('unhandledrejection',e=>say('Erreur : '+((e.reason&&e.re
 <script>
 const K='budget_hamza';let D;try{D=JSON.parse(localStorage.getItem(K))}catch(e){}
 D=D||{sal:0,bank:0,cur:'MAD',tx:[],fix:[],cats:[{n:'Alimentation',b:2000},{n:'Transport',b:800},{n:'Logement',b:0},{n:'Loisirs',b:600},{n:'Santé',b:300},{n:'Salaire',b:0},{n:'Autre',b:0}]};
+if(!D.start){const _d=new Date();D.start=_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')}
 let REF=null,T=null;const sync=()=>{if(!REF)return;clearTimeout(T);T=setTimeout(()=>REF.set(JSON.parse(JSON.stringify(D))).catch(()=>{}),600)};
 const $=i=>document.getElementById(i),save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}sync();render()},
-f=n=>(+n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' '+D.cur,mk=d=>d.slice(0,7),now=new Date().toISOString().slice(0,7),
+f=n=>(+n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' '+D.cur,mk=d=>d.slice(0,7),ym=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),now=ym(new Date()),
 esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const MOIS=new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'}).toUpperCase();
 $('today').textContent=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,section').forEach(e=>e.classList.remove('on'));b.classList.add('on');$(b.dataset.s).classList.add('on');document.body.classList.toggle('on-tx',b.dataset.s==='tx');window.scrollTo(0,0)});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,section').forEach(e=>e.classList.remove('on'));b.classList.add('on');$(b.dataset.s).classList.add('on');document.body.classList.toggle('on-tx',b.dataset.s==='tx');(window.matchMedia('(max-width:640px)').matches?document.querySelector('.wrap'):window).scrollTo(0,0)});
 const IC={dash:'<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>',tx:'<path d="M4 6h16M4 12h16M4 18h10"/>',fix:'<rect x="4" y="5" width="16" height="15" rx="1"/><path d="M4 10h16M9 3v4M15 3v4"/>',cat:'<circle cx="12" cy="12" r="8"/><path d="M12 4v8h8"/>',proj:'<path d="M4 19l6-6 4 4 6-8"/><path d="M15 9h5v5"/>',set:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 15-5 16 0"/>'};
 document.querySelectorAll('nav button').forEach(b=>b.insertAdjacentHTML('afterbegin','<svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.s]+'</svg>'));
 $('fab').onclick=()=>{document.querySelector('nav [data-s=tx]').click();setTimeout(()=>$('ta').focus(),60)};
-$('td').value=new Date().toISOString().slice(0,10);
+$('td').value=(d=>ym(d)+'-'+String(d.getDate()).padStart(2,'0'))(new Date());
 const PAL=['#1C1C1C','#A0782C','#9B2C2C','#2F5D50','#8A8578','#6E6A60','#B5AE9C','#5A4A3A'];
 if(window.Chart){Chart.defaults.font.family='"Segoe UI",system-ui';Chart.defaults.color='#6E6A60';Chart.defaults.borderColor='#E4DECF'}
-function month(m){const t=D.tx.filter(x=>mk(x.d)===m),fx=D.fix.reduce((s,x)=>s+ +x.a,0);
- return{rev:t.filter(x=>x.t=='rev').reduce((s,x)=>s+ +x.a,0)+ +D.sal,dep:t.filter(x=>x.t=='dep').reduce((s,x)=>s+ +x.a,0)+fx,t}}
+function month(m){const t=D.tx.filter(x=>mk(x.d)===m),on=m>=(D.start||now),fx=on?D.fix.reduce((s,x)=>s+ +x.a,0):0;
+ return{rev:t.filter(x=>x.t=='rev').reduce((s,x)=>s+ +x.a,0)+(on?+D.sal:0),dep:t.filter(x=>x.t=='dep').reduce((s,x)=>s+ +x.a,0)+fx,t}}
 const spentCat=c=>D.tx.filter(x=>mk(x.d)===now&&x.t=='dep'&&x.c==c).reduce((s,x)=>s+ +x.a,0)+D.fix.filter(x=>x.c==c).reduce((s,x)=>s+ +x.a,0);
 let ch={};function chart(id,cfg){if(!window.Chart)return;ch[id]&&ch[id].destroy();ch[id]=new Chart($(id),cfg)}
 const kp=(l,v,c='')=>`<div class="kpi"><div class="lab">${l}</div><div class="v ${c}">${v}</div></div>`;
@@ -154,10 +156,10 @@ function render(){
  const opts=D.cats.map(c=>`<option>${esc(c.n)}</option>`).join('');$('tc').innerHTML=opts;$('fc').innerHTML=opts;
  const m=month(now),bal=+D.bank+D.tx.reduce((s,x)=>s+(x.t=='rev'?+x.a:-x.a),0),sv=m.rev-m.dep,rate=m.rev?sv/m.rev*100:0;
  $('kpi').innerHTML=kp('Solde estimé',f(bal),bal<0?'neg':'')+kp('Revenus',f(m.rev))+kp('Dépenses',f(m.dep),'oc')+kp(`Épargne · ${rate.toFixed(0)} %`,f(sv),sv<0?'neg':'pos');
- const cs=D.cats.map(c=>[c.n,spentCat(c.n)]).filter(c=>c[1]>0);
+ const cs=D.cats.map(c=>[c.n,spentCat(c.n)]).filter(c=>c[1]>0);$('c1').style.display=cs.length?'':'none';$('c1e').style.display=cs.length?'none':'';
  chart('c1',{type:'doughnut',data:{labels:cs.map(c=>c[0]),datasets:[{data:cs.map(c=>c[1]),backgroundColor:PAL,borderColor:'#F7F4EC',borderWidth:3}]},options:{cutout:'70%',plugins:{legend:{position:'bottom',labels:{boxWidth:10}}}}});
- const ms=[...Array(6)].map((_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-5+i);return d.toISOString().slice(0,7)});
- chart('c2',{type:'bar',data:{labels:ms.map(x=>new Date(x+'-01').toLocaleDateString('fr-FR',{month:'short'})),datasets:[{label:'Revenus',data:ms.map(x=>month(x).rev),backgroundColor:'#1C1C1C'},{label:'Dépenses',data:ms.map(x=>month(x).dep),backgroundColor:'#A0782C'}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{x:{grid:{display:false}}}}});
+ const ms=[...Array(6)].map((_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-5+i);return ym(d)});
+ chart('c2',{type:'bar',data:{labels:ms.map(x=>new Date(+x.slice(0,4),+x.slice(5)-1,1).toLocaleDateString('fr-FR',{month:'short'})),datasets:[{label:'Revenus',data:ms.map(x=>month(x).rev),backgroundColor:'#1C1C1C'},{label:'Dépenses',data:ms.map(x=>month(x).dep),backgroundColor:'#A0782C'}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{x:{grid:{display:false}}}}});
  const tips=[],day=new Date().getDate(),dim=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
  const varDep=m.t.filter(x=>x.t=='dep').reduce((s,x)=>s+ +x.a,0),fxT=D.fix.reduce((s,x)=>s+ +x.a,0);
  tips.push(`Au rythme actuel, tes dépenses de fin de mois devraient atteindre <b>${f(fxT+varDep/day*dim)}</b>.`);
