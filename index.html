@@ -116,11 +116,11 @@ body.on-tx #fab{display:none}
 <label class="lab">Durée (années)<input type="number" id="py" value="5"></label><label class="lab">Objectif<input type="number" id="po" placeholder="ex. 100000"></label></form>
 <div class="kpis" id="pk"></div><div class="block"><div class="lab">Évolution du capital</div><canvas id="c3" height="150"></canvas></div></section>
 
-<section id="set"><h2>Compte</h2><p class="intro">Ton salaire et ton solde de départ servent de base à tous les calculs.</p>
+<section id="set"><h2>Compte</h2><p class="intro">Ton salaire et ton solde de départ servent de base à tous les calculs. Le solde estimé = solde de départ + (salaire − charges fixes) pour chaque mois depuis ton début + tes opérations. N'ajoute donc pas ton salaire en plus comme opération.</p>
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v11 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v12 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -150,11 +150,12 @@ function month(m){const t=D.tx.filter(x=>mk(x.d)===m),on=m>=(D.start||now),fx=on
  return{rev:t.filter(x=>x.t=='rev').reduce((s,x)=>s+ +x.a,0)+(on?+D.sal:0),dep:t.filter(x=>x.t=='dep').reduce((s,x)=>s+ +x.a,0)+fx,t}}
 const spentCat=c=>D.tx.filter(x=>mk(x.d)===now&&x.t=='dep'&&x.c==c).reduce((s,x)=>s+ +x.a,0)+D.fix.filter(x=>x.c==c).reduce((s,x)=>s+ +x.a,0);
 let ch={};function chart(id,cfg){if(!window.Chart)return;ch[id]&&ch[id].destroy();ch[id]=new Chart($(id),cfg)}
+const nbM=()=>{const[a,b]=(D.start||now).split('-').map(Number),[c,d]=now.split('-').map(Number);return Math.max(1,(c-a)*12+(d-b)+1)};
 const kp=(l,v,c='')=>`<div class="kpi"><div class="lab">${l}</div><div class="v ${c}">${v}</div></div>`;
 function render(){
  $('subt').textContent=`${MOIS} · MONTANTS EN ${D.cur.toUpperCase()}`;
  const opts=D.cats.map(c=>`<option>${esc(c.n)}</option>`).join('');$('tc').innerHTML=opts;$('fc').innerHTML=opts;
- const m=month(now),bal=+D.bank+D.tx.reduce((s,x)=>s+(x.t=='rev'?+x.a:-x.a),0),sv=m.rev-m.dep,rate=m.rev?sv/m.rev*100:0;
+ const m=month(now),bal=+D.bank+D.tx.reduce((s,x)=>s+(x.t=='rev'?+x.a:-x.a),0)+nbM()*(+D.sal-D.fix.reduce((s,x)=>s+ +x.a,0)),sv=m.rev-m.dep,rate=m.rev?sv/m.rev*100:0;
  $('kpi').innerHTML=kp('Solde estimé',f(bal),bal<0?'neg':'')+kp('Revenus',f(m.rev))+kp('Dépenses',f(m.dep),'oc')+kp(`Épargne · ${rate.toFixed(0)} %`,f(sv),sv<0?'neg':'pos');
  const cs=D.cats.map(c=>[c.n,spentCat(c.n)]).filter(c=>c[1]>0);$('c1').style.display=cs.length?'':'none';$('c1e').style.display=cs.length?'none':'';
  chart('c1',{type:'doughnut',data:{labels:cs.map(c=>c[0]),datasets:[{data:cs.map(c=>c[1]),backgroundColor:PAL,borderColor:'#F7F4EC',borderWidth:3}]},options:{cutout:'70%',plugins:{legend:{position:'bottom',labels:{boxWidth:10}}}}});
@@ -162,9 +163,9 @@ function render(){
  chart('c2',{type:'bar',data:{labels:ms.map(x=>new Date(+x.slice(0,4),+x.slice(5)-1,1).toLocaleDateString('fr-FR',{month:'short'})),datasets:[{label:'Revenus',data:ms.map(x=>month(x).rev),backgroundColor:'#1C1C1C'},{label:'Dépenses',data:ms.map(x=>month(x).dep),backgroundColor:'#A0782C'}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10}}},scales:{x:{grid:{display:false}}}}});
  const tips=[],day=new Date().getDate(),dim=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
  const varDep=m.t.filter(x=>x.t=='dep').reduce((s,x)=>s+ +x.a,0),fxT=D.fix.reduce((s,x)=>s+ +x.a,0);
- tips.push(`Au rythme actuel, tes dépenses de fin de mois devraient atteindre <b>${f(fxT+varDep/day*dim)}</b>.`);
+ if(day>=7)tips.push(`Estimation : au rythme actuel, tes dépenses de fin de mois devraient atteindre <b>${f(fxT+varDep/day*dim)}</b>.`);else tips.push(`L'estimation de fin de mois s'affichera à partir du 7, quand il y aura assez de dépenses pour être fiable.`);
  if(m.rev)tips.push(rate>=20?`Taux d'épargne de <b class="pos">${rate.toFixed(0)} %</b> : au-dessus de l'objectif courant de 20 %.`:`Taux d'épargne de <b class="neg">${rate.toFixed(0)} %</b>. Pour atteindre 20 %, il faudrait mettre de côté <b>${f(m.rev*.2)}</b> par mois.`);
- D.cats.forEach(c=>{const s=spentCat(c.n);if(c.b>0&&s>c.b)tips.push(`<b>${esc(c.n)}</b> : budget dépassé de <b class="neg">${f(s-c.b)}</b>.`);else if(c.b>0&&s>c.b*.8)tips.push(`<b>${esc(c.n)}</b> : <b class="oc">${(s/c.b*100).toFixed(0)} %</b> du budget déjà utilisé.`)});
+ D.cats.forEach(c=>{const s=spentCat(c.n);if(!D.tx.some(x=>mk(x.d)===now&&x.t=='dep'&&x.c==c.n))return;if(c.b>0&&s>c.b)tips.push(`<b>${esc(c.n)}</b> : budget dépassé de <b class="neg">${f(s-c.b)}</b>.`);else if(c.b>0&&s>c.b*.8)tips.push(`<b>${esc(c.n)}</b> : <b class="oc">${(s/c.b*100).toFixed(0)} %</b> du budget déjà utilisé.`)});
  if(m.rev&&fxT/m.rev>.5)tips.push(`Les charges fixes représentent <b class="oc">${(fxT/m.rev*100).toFixed(0)} %</b> de tes revenus.`);
  if(!m.rev&&!D.tx.length)tips.push(`Commence par renseigner ton salaire dans l'onglet <b>Compte</b>, puis ajoute tes opérations.`);
  $('tips').innerHTML=tips.map(t=>`<div class="note">${t}</div>`).join('');
