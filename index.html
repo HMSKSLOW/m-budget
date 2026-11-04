@@ -47,7 +47,7 @@ footer{margin-top:60px;border-top:1px solid var(--ink);padding-top:10px}
 .auth{position:fixed;inset:0;z-index:200;background:var(--paper);overflow:auto;display:flex;justify-content:center;padding:calc(64px + env(safe-area-inset-top)) 24px 40px}.auth[hidden]{display:none}
 .auth-in{width:100%;max-width:420px}.auth-in h1{border-bottom:3px solid var(--ink);padding-bottom:12px}.auth-in .sub{margin:10px 0 34px}
 #authForm,#authChoice{display:flex;flex-direction:column;gap:18px}#authForm label{display:flex;flex-direction:column;gap:6px}#authForm input{width:100%;font-size:16px}
-.alinks{font-size:13px;color:var(--sec);text-align:center;margin-top:4px}.alinks a{color:var(--ink)}.aerr{color:var(--neg);font-size:14px;min-height:20px}#authChoice p{color:var(--sec)}#authForm[hidden],#authChoice[hidden]{display:none}.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px}.orsep{text-align:center;font-size:12px;color:var(--hd);letter-spacing:.5px}
+.alinks{font-size:13px;color:var(--sec);text-align:center;margin-top:4px}.alinks a{color:var(--ink)}.aerr{color:var(--neg);font-size:14px;min-height:20px}#authChoice p{color:var(--sec)}#authForm[hidden],#authChoice[hidden]{display:none}.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px}#acctLink[hidden]{display:none}.orsep{text-align:center;font-size:12px;color:var(--hd);letter-spacing:.5px}
 .btn:disabled{opacity:.5}
 #fab{display:none}.ni{display:none}
 @media(max-width:760px){.cols{grid-template-columns:1fr;gap:0}}
@@ -126,10 +126,10 @@ body.on-tx #fab{display:none}
 <section id="set"><h2>Compte</h2><p class="intro">Ton salaire et ton solde de départ servent de base à tous les calculs. Le solde estimé = solde de départ + (salaire − charges fixes) pour chaque mois depuis ton début + tes opérations. N'ajoute donc pas ton salaire en plus comme opération.</p>
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Compte en ligne</div><div class="note" id="acct">Non connecté : tes données restent sur cet appareil.</div>
-<div style="display:flex;gap:12px;margin:14px 0 30px"><button class="btn ghost" id="acctBtn" type="button">Se connecter</button></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 30px"><button class="btn ghost" id="acctBtn" type="button">Se connecter</button><button class="btn ghost" id="acctLink" type="button" hidden>Relier mon compte Google</button></div>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v19 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v20 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="auth" class="auth" hidden><div class="auth-in">
@@ -246,7 +246,7 @@ $('bst').onclick=()=>{const b=$('bst'),t=b.textContent;b.textContent='✓ Enregi
 $('exp').onclick=async()=>{try{localStorage.setItem(K+'_exp',Date.now())}catch(e){}const dl=window.claude?await claude.use('downloads'):null,data=JSON.stringify(D,null,2);if(dl){try{await dl.save({filename:'budget.json',data})}catch(e){}return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download='budget.json';a.click()};
 $('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);render.pj=0;save()}catch(x){}};r.readAsText(e.target.files[0])};
 render();
-const VER='v19';
+const VER='v20';
 async function checkUpd(){try{const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});const m=(await r.text()).match(/const VER='(v\d+)'/);if(m&&m[1]!==VER){try{if(sessionStorage.getItem('upd')===m[1])return;sessionStorage.setItem('upd',m[1])}catch(e){}say('Nouvelle version '+m[1]+' : mise à jour…');setTimeout(()=>location.replace(location.pathname+'?v='+Date.now()),1200)}}catch(e){}}
 checkUpd();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpd()});
 try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&Date.now()-L>14*864e5)setTimeout(()=>say('Pense à exporter une sauvegarde (onglet Compte).'),1500)}catch(e){}
@@ -254,19 +254,20 @@ try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&D
 </script>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {GoogleAuthProvider,signInWithPopup,getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {GoogleAuthProvider,signInWithPopup,linkWithPopup,getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {getFirestore,doc,getDoc,setDoc,onSnapshot} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const app=initializeApp({apiKey:"AIzaSyBJajsGgNPpYqR2A1Q1yj688PKS0by4Bnc",authDomain:"mon-budget-55945.firebaseapp.com",projectId:"mon-budget-55945",storageBucket:"mon-budget-55945.firebasestorage.app",messagingSenderId:"477228920528",appId:"1:477228920528:web:672b5b9bbadfa1c84db8d5"});
 const auth=getAuth(app),fdb=getFirestore(app),$$=i=>document.getElementById(i);
 let ref=null,unsub=null,tm=null,applying=false,pendingRemote=null;
-const ERR={'auth/invalid-credential':'E-mail ou mot de passe incorrect.','auth/wrong-password':'E-mail ou mot de passe incorrect.','auth/user-not-found':'Aucun compte avec cet e-mail : crée-le.','auth/email-already-in-use':'Un compte existe déjà avec cet e-mail : connecte-toi.','auth/weak-password':'Mot de passe trop court (6 caractères minimum).','auth/invalid-email':'Adresse e-mail invalide.','auth/missing-password':'Indique ton mot de passe.','auth/network-request-failed':'Pas de connexion internet.','auth/too-many-requests':'Trop de tentatives, réessaie dans quelques minutes.','auth/popup-closed-by-user':'Fenêtre Google fermée avant la fin.','auth/cancelled-popup-request':'Fenêtre Google fermée avant la fin.','auth/popup-blocked':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','auth/operation-not-supported-in-this-environment':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','auth/operation-not-allowed':'Connexion Google pas encore activée dans Firebase.','auth/unauthorized-domain':'Domaine non autorisé dans Firebase (ajoute hmskslow.github.io).','auth/account-exists-with-different-credential':'Ce compte existe déjà avec un mot de passe : connecte-toi par e-mail.','auth/internal-error':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','permission-denied':'Accès refusé par la base : vérifie les règles Firestore.'};
+const ERR={'auth/invalid-credential':'E-mail ou mot de passe incorrect.','auth/wrong-password':'E-mail ou mot de passe incorrect.','auth/user-not-found':'Aucun compte avec cet e-mail : crée-le.','auth/email-already-in-use':'Un compte existe déjà avec cet e-mail : connecte-toi.','auth/weak-password':'Mot de passe trop court (6 caractères minimum).','auth/invalid-email':'Adresse e-mail invalide.','auth/missing-password':'Indique ton mot de passe.','auth/network-request-failed':'Pas de connexion internet.','auth/too-many-requests':'Trop de tentatives, réessaie dans quelques minutes.','auth/popup-closed-by-user':'Fenêtre Google fermée avant la fin.','auth/cancelled-popup-request':'Fenêtre Google fermée avant la fin.','auth/credential-already-in-use':'Ce compte Google est déjà relié à un autre compte Mon Budget.','auth/provider-already-linked':'Ton compte Google est déjà relié.','auth/popup-blocked':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','auth/operation-not-supported-in-this-environment':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','auth/operation-not-allowed':'Connexion Google pas encore activée dans Firebase.','auth/unauthorized-domain':'Domaine non autorisé dans Firebase (ajoute hmskslow.github.io).','auth/account-exists-with-different-credential':'Ce compte existe déjà avec un mot de passe : connecte-toi par e-mail.','auth/internal-error':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','permission-denied':'Accès refusé par la base : vérifie les règles Firestore.'};
 const msgOf=e=>ERR[e&&e.code]||((e&&e.code||'')+'').replace(/^auth\//,'Erreur : ')||'Erreur inconnue';
 const showAuth=v=>{$$('auth').hidden=!v;$$('authForm').hidden=false;$$('authChoice').hidden=true;$$('aerr').textContent=''};
 const push=()=>setDoc(ref,{data:JSON.stringify(D),at:Date.now()});
 window.cloudSave=()=>{if(!ref||applying)return;clearTimeout(tm);tm=setTimeout(()=>push().catch(e=>say('Synchronisation impossible : '+msgOf(e),1)),700)};
 function apply(r){applying=true;D=r;['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}render.pj=0;render();applying=false}
 function listen(){unsub&&unsub();unsub=onSnapshot(ref,sn=>{if(sn.metadata.hasPendingWrites||!sn.exists())return;const r=sn.data().data;if(r&&r!==JSON.stringify(D))apply(JSON.parse(r))},e=>say('Synchronisation : '+msgOf(e),1))}
-function acctUI(u){$$('acct').textContent=u?'Connecté : '+u.email+'. Tes données sont synchronisées sur tous tes appareils.':'Non connecté : tes données restent sur cet appareil.';$$('acctBtn').textContent=u?'Se déconnecter':'Se connecter'}
+const hasG=u=>!!u&&u.providerData.some(x=>x.providerId==='google.com');
+function acctUI(u){$$('acct').textContent=u?'Connecté : '+u.email+(hasG(u)?' (Google relié)':'')+'. Tes données sont synchronisées sur tous tes appareils.':'Non connecté : tes données restent sur cet appareil.';$$('acctBtn').textContent=u?'Se déconnecter':'Se connecter';$$('acctLink').hidden=!u||hasG(u)}
 onAuthStateChanged(auth,async u=>{acctUI(u);
  if(!u){ref=null;unsub&&unsub();unsub=null;let loc=0;try{loc=localStorage.getItem('mb_local')==='1'}catch(e){}showAuth(!loc);return}
  showAuth(false);ref=doc(fdb,'users',u.uid);
@@ -280,6 +281,7 @@ onAuthStateChanged(auth,async u=>{acctUI(u);
 $$('cRemote').onclick=()=>{apply(pendingRemote);D.uid=auth.currentUser.uid;showAuth(false);listen();say('Données du compte chargées.')};
 $$('cLocal').onclick=async()=>{D.uid=auth.currentUser.uid;try{await push();showAuth(false);listen();say('Données de cet appareil envoyées sur ton compte.')}catch(e){$$('aerr').textContent=msgOf(e)}};
 async function go(fn,btn){const e=$$('ae').value.trim(),p=$$('ap').value;$$('aerr').textContent='';if(!e||!p){$$('aerr').textContent='Indique ton e-mail et ton mot de passe.';return}btn.disabled=true;try{await fn(auth,e,p)}catch(x){$$('aerr').textContent=msgOf(x)}btn.disabled=false}
+$$('acctLink').onclick=async()=>{try{const pr=new GoogleAuthProvider();pr.setCustomParameters({prompt:'select_account'});const r=await linkWithPopup(auth.currentUser,pr);acctUI(r.user);say('Compte Google relié : connecte-toi avec Google ou par e-mail, ce sont les mêmes données.')}catch(x){say(msgOf(x),1)}};
 $$('aGoogle').onclick=async()=>{const b=$$('aGoogle');$$('aerr').textContent='';b.disabled=true;try{const pr=new GoogleAuthProvider();pr.setCustomParameters({prompt:'select_account'});await signInWithPopup(auth,pr)}catch(x){$$('aerr').textContent=msgOf(x)}b.disabled=false};
 $$('aLogin').onclick=()=>go(signInWithEmailAndPassword,$$('aLogin'));
 $$('aSign').onclick=()=>go(createUserWithEmailAndPassword,$$('aSign'));
