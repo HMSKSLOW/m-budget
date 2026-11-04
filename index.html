@@ -44,6 +44,11 @@ td.l{font:16px Georgia,serif}td.m{font-weight:700;text-align:right;font-variant-
 [data-ph]:empty::before{content:attr(data-ph);color:var(--hd)}[data-ph]{outline-offset:2px;min-width:40px;display:inline-block}
 footer{margin-top:60px;border-top:1px solid var(--ink);padding-top:10px}
 .rest{font-size:12px;color:var(--sec);margin-top:6px}.rest b{color:var(--ink)}.sur{font-weight:400;font-size:.85em}td.bud{cursor:text}
+.auth{position:fixed;inset:0;z-index:200;background:var(--paper);overflow:auto;display:flex;justify-content:center;padding:calc(64px + env(safe-area-inset-top)) 24px 40px}.auth[hidden]{display:none}
+.auth-in{width:100%;max-width:420px}.auth-in h1{border-bottom:3px solid var(--ink);padding-bottom:12px}.auth-in .sub{margin:10px 0 34px}
+#authForm,#authChoice{display:flex;flex-direction:column;gap:18px}#authForm label{display:flex;flex-direction:column;gap:6px}#authForm input{width:100%;font-size:16px}
+.alinks{font-size:13px;color:var(--sec);text-align:center;margin-top:4px}.alinks a{color:var(--ink)}.aerr{color:var(--neg);font-size:14px;min-height:20px}#authChoice p{color:var(--sec)}#authForm[hidden],#authChoice[hidden]{display:none}
+.btn:disabled{opacity:.5}
 #fab{display:none}.ni{display:none}
 @media(max-width:760px){.cols{grid-template-columns:1fr;gap:0}}
 @media(max-width:640px){
@@ -120,11 +125,25 @@ body.on-tx #fab{display:none}
 
 <section id="set"><h2>Compte</h2><p class="intro">Ton salaire et ton solde de départ servent de base à tous les calculs. Le solde estimé = solde de départ + (salaire − charges fixes) pour chaque mois depuis ton début + tes opérations. N'ajoute donc pas ton salaire en plus comme opération.</p>
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
+<div class="band">→  Compte en ligne</div><div class="note" id="acct">Non connecté : tes données restent sur cet appareil.</div>
+<div style="display:flex;gap:12px;margin:14px 0 30px"><button class="btn ghost" id="acctBtn" type="button">Se connecter</button></div>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v17 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v18 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
+<div id="auth" class="auth" hidden><div class="auth-in">
+<h1>Mon Budget</h1><div class="sub">Connexion · tes données sur tous tes appareils</div>
+<div id="authForm">
+<label class="lab">E-mail<input type="email" id="ae" autocomplete="email" autocapitalize="off"></label>
+<label class="lab">Mot de passe<input type="password" id="ap" autocomplete="current-password"></label>
+<button class="btn" id="aLogin" type="button">Se connecter</button>
+<button class="btn ghost" id="aSign" type="button">Créer mon compte</button>
+<div class="alinks"><a href="#" id="aReset">Mot de passe oublié</a> · <a href="#" id="aLocal">Continuer sans compte</a></div>
+<p class="aerr" id="aerr"></p></div>
+<div id="authChoice" hidden><p>Cet appareil et ton compte contiennent des données différentes. Lesquelles veux-tu garder ?</p>
+<button class="btn" id="cRemote" type="button">Celles du compte</button><button class="btn ghost" id="cLocal" type="button">Celles de cet appareil</button></div>
+</div></div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
 <script>
 function say(t,err){const m=document.getElementById('msg');if(!m)return;m.style.background=err?'#9B2C2C':'#1C1C1C';m.textContent=t;m.style.display='block';clearTimeout(say.t);say.t=setTimeout(()=>m.style.display='none',err?8000:2500)}
@@ -143,7 +162,7 @@ function applySug2(){if(D.sug2610b)return false;const g=n=>D.cats.find(x=>x.n.to
  const r=g('Restaurants & cafés');if(r&&r.b===1500)r.b=2100;const a=g('Autre');if(a&&a.b===600)a.b=200;
  D.sug2610b=1;return true}
 if(applySug2()){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}}
-let REF=null,T=null;const sync=()=>{if(!REF)return;clearTimeout(T);T=setTimeout(()=>REF.set(JSON.parse(JSON.stringify(D))).catch(()=>{}),600)};
+let REF=null,T=null;const sync=()=>{if(window.cloudSave)window.cloudSave();if(!REF)return;clearTimeout(T);T=setTimeout(()=>REF.set(JSON.parse(JSON.stringify(D))).catch(()=>{}),600)};
 const $=i=>document.getElementById(i),save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}sync();render()},
 f=n=>(+n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' '+D.cur,mk=d=>d.slice(0,7),ym=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),now=ym(new Date()),
 esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -225,9 +244,44 @@ $('bst').onclick=()=>{const b=$('bst'),t=b.textContent;b.textContent='✓ Enregi
 $('exp').onclick=async()=>{try{localStorage.setItem(K+'_exp',Date.now())}catch(e){}const dl=window.claude?await claude.use('downloads'):null,data=JSON.stringify(D,null,2);if(dl){try{await dl.save({filename:'budget.json',data})}catch(e){}return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download='budget.json';a.click()};
 $('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);render.pj=0;save()}catch(x){}};r.readAsText(e.target.files[0])};
 render();
-const VER='v17';
+const VER='v18';
 async function checkUpd(){try{const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});const m=(await r.text()).match(/const VER='(v\d+)'/);if(m&&m[1]!==VER){try{if(sessionStorage.getItem('upd')===m[1])return;sessionStorage.setItem('upd',m[1])}catch(e){}say('Nouvelle version '+m[1]+' : mise à jour…');setTimeout(()=>location.replace(location.pathname+'?v='+Date.now()),1200)}}catch(e){}}
 checkUpd();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpd()});
 try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&Date.now()-L>14*864e5)setTimeout(()=>say('Pense à exporter une sauvegarde (onglet Compte).'),1500)}catch(e){}
 (async()=>{if(!window.claude)return;try{const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;const ref=db.doc('data/users/'+id+'/budget');const s=await ref.get();if(s.exists&&s.data()){D=JSON.parse(JSON.stringify(Object.assign({},D,s.data())));['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}REF=ref;if(applySug()|applySug2())sync();render.pj=0;render()}else{REF=ref;sync()}}catch(e){}})();
+</script>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,doc,getDoc,setDoc,onSnapshot} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+const app=initializeApp({apiKey:"AIzaSyBJajsGgNPpYqR2A1Q1yj688PKS0by4Bnc",authDomain:"mon-budget-55945.firebaseapp.com",projectId:"mon-budget-55945",storageBucket:"mon-budget-55945.firebasestorage.app",messagingSenderId:"477228920528",appId:"1:477228920528:web:672b5b9bbadfa1c84db8d5"});
+const auth=getAuth(app),fdb=getFirestore(app),$$=i=>document.getElementById(i);
+let ref=null,unsub=null,tm=null,applying=false,pendingRemote=null;
+const ERR={'auth/invalid-credential':'E-mail ou mot de passe incorrect.','auth/wrong-password':'E-mail ou mot de passe incorrect.','auth/user-not-found':'Aucun compte avec cet e-mail : crée-le.','auth/email-already-in-use':'Un compte existe déjà avec cet e-mail : connecte-toi.','auth/weak-password':'Mot de passe trop court (6 caractères minimum).','auth/invalid-email':'Adresse e-mail invalide.','auth/missing-password':'Indique ton mot de passe.','auth/network-request-failed':'Pas de connexion internet.','auth/too-many-requests':'Trop de tentatives, réessaie dans quelques minutes.','permission-denied':'Accès refusé par la base : vérifie les règles Firestore.'};
+const msgOf=e=>ERR[e&&e.code]||((e&&e.code||'')+'').replace(/^auth\//,'Erreur : ')||'Erreur inconnue';
+const showAuth=v=>{$$('auth').hidden=!v;$$('authForm').hidden=false;$$('authChoice').hidden=true;$$('aerr').textContent=''};
+const push=()=>setDoc(ref,{data:JSON.stringify(D),at:Date.now()});
+window.cloudSave=()=>{if(!ref||applying)return;clearTimeout(tm);tm=setTimeout(()=>push().catch(e=>say('Synchronisation impossible : '+msgOf(e),1)),700)};
+function apply(r){applying=true;D=r;['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}render.pj=0;render();applying=false}
+function listen(){unsub&&unsub();unsub=onSnapshot(ref,sn=>{if(sn.metadata.hasPendingWrites||!sn.exists())return;const r=sn.data().data;if(r&&r!==JSON.stringify(D))apply(JSON.parse(r))},e=>say('Synchronisation : '+msgOf(e),1))}
+function acctUI(u){$$('acct').textContent=u?'Connecté : '+u.email+'. Tes données sont synchronisées sur tous tes appareils.':'Non connecté : tes données restent sur cet appareil.';$$('acctBtn').textContent=u?'Se déconnecter':'Se connecter'}
+onAuthStateChanged(auth,async u=>{acctUI(u);
+ if(!u){ref=null;unsub&&unsub();unsub=null;let loc=0;try{loc=localStorage.getItem('mb_local')==='1'}catch(e){}showAuth(!loc);return}
+ showAuth(false);ref=doc(fdb,'users',u.uid);
+ try{const sn=await getDoc(ref);const remote=sn.exists()&&sn.data().data?JSON.parse(sn.data().data):null;
+  const localHas=D.tx.length||D.fix.length||+D.sal;
+  if(!remote){await push();say('Compte relié : tes données sont maintenant en ligne.')}
+  else if(localHas&&D.uid!==u.uid&&JSON.stringify(remote)!==JSON.stringify(D)){pendingRemote=remote;$$('auth').hidden=false;$$('authForm').hidden=true;$$('authChoice').hidden=false;return}
+  else apply(remote);
+  D.uid=u.uid;try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}listen();
+ }catch(e){say('Connexion à la base impossible : '+msgOf(e),1)}});
+$$('cRemote').onclick=()=>{apply(pendingRemote);D.uid=auth.currentUser.uid;showAuth(false);listen();say('Données du compte chargées.')};
+$$('cLocal').onclick=async()=>{D.uid=auth.currentUser.uid;try{await push();showAuth(false);listen();say('Données de cet appareil envoyées sur ton compte.')}catch(e){$$('aerr').textContent=msgOf(e)}};
+async function go(fn,btn){const e=$$('ae').value.trim(),p=$$('ap').value;$$('aerr').textContent='';if(!e||!p){$$('aerr').textContent='Indique ton e-mail et ton mot de passe.';return}btn.disabled=true;try{await fn(auth,e,p)}catch(x){$$('aerr').textContent=msgOf(x)}btn.disabled=false}
+$$('aLogin').onclick=()=>go(signInWithEmailAndPassword,$$('aLogin'));
+$$('aSign').onclick=()=>go(createUserWithEmailAndPassword,$$('aSign'));
+$$('ap').addEventListener('keydown',e=>{if(e.key==='Enter')$$('aLogin').click()});
+$$('aReset').onclick=async e=>{e.preventDefault();const m=$$('ae').value.trim();if(!m){$$('aerr').textContent='Écris ton e-mail, puis touche « Mot de passe oublié ».';return}try{await sendPasswordResetEmail(auth,m);$$('aerr').textContent='E-mail de réinitialisation envoyé à '+m+'.'}catch(x){$$('aerr').textContent=msgOf(x)}};
+$$('aLocal').onclick=e=>{e.preventDefault();try{localStorage.setItem('mb_local','1')}catch(x){}showAuth(false)};
+$$('acctBtn').onclick=async()=>{if(auth.currentUser){await signOut(auth);try{localStorage.setItem('mb_local','1')}catch(x){}say('Déconnecté.')}else{try{localStorage.removeItem('mb_local')}catch(x){}showAuth(true)}};
 </script></body></html>
