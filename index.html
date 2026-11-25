@@ -126,10 +126,11 @@ body.on-tx #fab{display:none}
 <section id="set"><h2>Compte</h2><p class="intro">Ton salaire et ton solde de départ servent de base à tous les calculs. Le solde estimé = solde de départ + (salaire − charges fixes) pour chaque mois depuis ton début + tes opérations. N'ajoute donc pas ton salaire en plus comme opération.</p>
 <form id="fst"><label class="lab">Salaire mensuel<input type="number" id="ss"></label><label class="lab">Solde bancaire initial<input type="number" id="sb"></label><label class="lab">Devise<input id="sd" style="min-width:80px"></label><button class="btn" type="button" id="bst">Enregistrer</button></form>
 <div class="band">→  Compte en ligne</div><div class="note" id="acct">Non connecté : tes données restent sur cet appareil.</div>
-<div style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 30px"><button class="btn ghost" id="acctBtn" type="button">Se connecter</button><button class="btn ghost" id="acctLink" type="button" hidden>Relier mon compte Google</button></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 30px"><button class="btn ghost" id="acctBtn" type="button">Se connecter</button><button class="btn ghost" id="acctLink" type="button" hidden>Relier mon compte Google</button><button class="btn ghost" id="verBtn" type="button">Versions précédentes</button></div>
+<div id="verList" style="margin-bottom:30px"></div>
 <div class="band">→  Sauvegarde</div><div class="note">Tes données restent dans ce navigateur. Exporte-les régulièrement pour garder une copie.</div>
 <div style="display:flex;gap:12px;margin-top:18px"><button class="btn ghost" id="exp">Exporter</button><label class="btn ghost">Importer<input type="file" id="imp" hidden></label></div></section>
-<footer class="lab">Mon Budget · Usage personnel · v20 web</footer>
+<footer class="lab">Mon Budget · Usage personnel · v21 web</footer>
 <button id="fab" type="button" aria-label="Ajouter une dépense">+</button>
 </div>
 <div id="auth" class="auth" hidden><div class="auth-in">
@@ -143,7 +144,7 @@ body.on-tx #fab{display:none}
 <button class="btn ghost" id="aSign" type="button">Créer mon compte</button>
 <div class="alinks"><a href="#" id="aReset">Mot de passe oublié</a> · <a href="#" id="aLocal">Continuer sans compte</a></div>
 <p class="aerr" id="aerr"></p></div>
-<div id="authChoice" hidden><p>Cet appareil et ton compte contiennent des données différentes. Lesquelles veux-tu garder ?</p>
+<div id="authChoice" hidden><p id="chTxt">Cet appareil et ton compte contiennent des données différentes. Lesquelles veux-tu garder ?</p>
 <button class="btn" id="cRemote" type="button">Celles du compte</button><button class="btn ghost" id="cLocal" type="button">Celles de cet appareil</button></div>
 </div></div>
 <div id="msg" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;display:none;padding:12px 14px;font:14px 'Segoe UI',system-ui;color:#F7F4EC;background:#1C1C1C"></div>
@@ -246,7 +247,7 @@ $('bst').onclick=()=>{const b=$('bst'),t=b.textContent;b.textContent='✓ Enregi
 $('exp').onclick=async()=>{try{localStorage.setItem(K+'_exp',Date.now())}catch(e){}const dl=window.claude?await claude.use('downloads'):null,data=JSON.stringify(D,null,2);if(dl){try{await dl.save({filename:'budget.json',data})}catch(e){}return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download='budget.json';a.click()};
 $('imp').onchange=e=>{const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);render.pj=0;save()}catch(x){}};r.readAsText(e.target.files[0])};
 render();
-const VER='v20';
+const VER='v21';
 async function checkUpd(){try{const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});const m=(await r.text()).match(/const VER='(v\d+)'/);if(m&&m[1]!==VER){try{if(sessionStorage.getItem('upd')===m[1])return;sessionStorage.setItem('upd',m[1])}catch(e){}say('Nouvelle version '+m[1]+' : mise à jour…');setTimeout(()=>location.replace(location.pathname+'?v='+Date.now()),1200)}}catch(e){}}
 checkUpd();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpd()});
 try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&Date.now()-L>14*864e5)setTimeout(()=>say('Pense à exporter une sauvegarde (onglet Compte).'),1500)}catch(e){}
@@ -255,31 +256,48 @@ try{const L=+localStorage.getItem(K+'_exp')||0;if((D.tx.length||D.fix.length)&&D
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {GoogleAuthProvider,signInWithPopup,linkWithPopup,getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,onSnapshot} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,onSnapshot,runTransaction} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const app=initializeApp({apiKey:"AIzaSyBJajsGgNPpYqR2A1Q1yj688PKS0by4Bnc",authDomain:"mon-budget-55945.firebaseapp.com",projectId:"mon-budget-55945",storageBucket:"mon-budget-55945.firebasestorage.app",messagingSenderId:"477228920528",appId:"1:477228920528:web:672b5b9bbadfa1c84db8d5"});
 const auth=getAuth(app),fdb=getFirestore(app),$$=i=>document.getElementById(i);
-let ref=null,unsub=null,tm=null,applying=false,pendingRemote=null;
+let ref=null,unsub=null,tm=null,applying=false,pendingRemote=null,ready=false,baseAt=0,curUser=null;
 const ERR={'auth/invalid-credential':'E-mail ou mot de passe incorrect.','auth/wrong-password':'E-mail ou mot de passe incorrect.','auth/user-not-found':'Aucun compte avec cet e-mail : crée-le.','auth/email-already-in-use':'Un compte existe déjà avec cet e-mail : connecte-toi.','auth/weak-password':'Mot de passe trop court (6 caractères minimum).','auth/invalid-email':'Adresse e-mail invalide.','auth/missing-password':'Indique ton mot de passe.','auth/network-request-failed':'Pas de connexion internet.','auth/too-many-requests':'Trop de tentatives, réessaie dans quelques minutes.','auth/popup-closed-by-user':'Fenêtre Google fermée avant la fin.','auth/cancelled-popup-request':'Fenêtre Google fermée avant la fin.','auth/credential-already-in-use':'Ce compte Google est déjà relié à un autre compte Mon Budget.','auth/provider-already-linked':'Ton compte Google est déjà relié.','auth/popup-blocked':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','auth/operation-not-supported-in-this-environment':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','auth/operation-not-allowed':'Connexion Google pas encore activée dans Firebase.','auth/unauthorized-domain':'Domaine non autorisé dans Firebase (ajoute hmskslow.github.io).','auth/account-exists-with-different-credential':'Ce compte existe déjà avec un mot de passe : connecte-toi par e-mail.','auth/internal-error':'Google est bloqué ici. Sur iPhone, connecte-toi avec ton e-mail.','permission-denied':'Accès refusé par la base : vérifie les règles Firestore.'};
 const msgOf=e=>ERR[e&&e.code]||((e&&e.code||'')+'').replace(/^auth\//,'Erreur : ')||'Erreur inconnue';
 const showAuth=v=>{$$('auth').hidden=!v;$$('authForm').hidden=false;$$('authChoice').hidden=true;$$('aerr').textContent=''};
-const push=()=>setDoc(ref,{data:JSON.stringify(D),at:Date.now()});
-window.cloudSave=()=>{if(!ref||applying)return;clearTimeout(tm);tm=setTimeout(()=>push().catch(e=>say('Synchronisation impossible : '+msgOf(e),1)),700)};
-function apply(r){applying=true;D=r;['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}render.pj=0;render();applying=false}
-function listen(){unsub&&unsub();unsub=onSnapshot(ref,sn=>{if(sn.metadata.hasPendingWrites||!sn.exists())return;const r=sn.data().data;if(r&&r!==JSON.stringify(D))apply(JSON.parse(r))},e=>say('Synchronisation : '+msgOf(e),1))}
+const sum=d=>{const t=(d&&d.tx)||[];const last=t.reduce((m,x)=>x.d>m?x.d:m,'');return t.length+' opération'+(t.length>1?'s':'')+(last?', la dernière le '+last.split('-').reverse().join('/'):'')};
+const isDirty=()=>{try{return localStorage.getItem(K+'_synced')!==JSON.stringify(D)}catch(e){return true}};const markSynced=()=>{try{localStorage.setItem(K+'_synced',JSON.stringify(D))}catch(e){}};
+const bkLocal=(data,at)=>{try{const k=K+'_bk',a=JSON.parse(localStorage.getItem(k)||'[]');if(a[0]&&a[0].data===data)return;a.unshift({at:at||Date.now(),data});localStorage.setItem(k,JSON.stringify(a.slice(0,10)))}catch(e){}};
+async function push(force){const data=JSON.stringify(D);await runTransaction(fdb,async t=>{const sn=await t.get(ref);const cur=sn.exists()?sn.data():null;
+ if(cur&&!force&&(cur.at||0)>baseAt)throw{code:'stale',remote:cur};
+ const hist=(cur&&Array.isArray(cur.hist))?cur.hist.slice():[];if(cur&&cur.data&&cur.data!==data)hist.unshift({at:cur.at||0,data:cur.data});
+ const at=Date.now();t.set(ref,{data,at,hist:hist.slice(0,10)});baseAt=at});bkLocal(data,baseAt);if(JSON.stringify(D)===data)markSynced()}
+window.cloudSave=()=>{if(!ref||applying||!ready)return;clearTimeout(tm);tm=setTimeout(()=>push().catch(e=>{if(e&&e.code==='stale'){ready=false;conflict(JSON.parse(e.remote.data),e.remote.at)}else say('Synchronisation impossible : '+msgOf(e)+'. Tes saisies restent sur cet appareil.',1)}),700)};
+function apply(r){applying=true;D=r;['tx','fix','cats'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}markSynced();render.pj=0;render();applying=false}
+function listen(){unsub&&unsub();unsub=onSnapshot(ref,sn=>{if(sn.metadata.hasPendingWrites||!sn.exists())return;const d=sn.data();if((d.at||0)<=baseAt)return;baseAt=d.at;if(d.data&&d.data!==JSON.stringify(D)){bkLocal(JSON.stringify(D));apply(JSON.parse(d.data))}},e=>say('Synchronisation : '+msgOf(e),1))}
+function conflict(remote,at){pendingRemote={remote,at};$$('chTxt').textContent='Cet appareil et ton compte n\'ont pas les mêmes données. Sur cet appareil : '+sum(D)+'. Sur ton compte : '+sum(remote)+'. Lesquelles garder ? L\'autre version reste récupérable dans Compte → Versions précédentes.';$$('auth').hidden=false;$$('authForm').hidden=true;$$('authChoice').hidden=false}
+async function initSync(){if(!curUser)return;ready=false;
+ try{const sn=await getDoc(ref);const cur=sn.exists()?sn.data():null;const remote=cur&&cur.data?JSON.parse(cur.data):null;baseAt=(cur&&cur.at)||0;
+  const localHas=D.tx.length||D.fix.length||+D.sal;
+  if(!remote){ready=true;await push(true);say('Compte relié : tes données sont maintenant en ligne.')}
+  else if(localHas&&JSON.stringify(remote)!==JSON.stringify(D)&&D.uid===curUser.uid&&!isDirty()){bkLocal(JSON.stringify(D));apply(remote);ready=true}
+  else if(localHas&&JSON.stringify(remote)!==JSON.stringify(D)){conflict(remote,baseAt);return}
+  else{apply(remote);ready=true}
+  D.uid=curUser.uid;try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}markSynced();listen();
+ }catch(e){ready=false;say('Hors ligne : synchronisation en pause. Elle reprendra dès que la connexion revient.',1)}}
+window.addEventListener('online',()=>{if(curUser&&!ready)initSync()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&curUser&&!ready)initSync()});
 const hasG=u=>!!u&&u.providerData.some(x=>x.providerId==='google.com');
 function acctUI(u){$$('acct').textContent=u?'Connecté : '+u.email+(hasG(u)?' (Google relié)':'')+'. Tes données sont synchronisées sur tous tes appareils.':'Non connecté : tes données restent sur cet appareil.';$$('acctBtn').textContent=u?'Se déconnecter':'Se connecter';$$('acctLink').hidden=!u||hasG(u)}
-onAuthStateChanged(auth,async u=>{acctUI(u);
- if(!u){ref=null;unsub&&unsub();unsub=null;let loc=0;try{loc=localStorage.getItem('mb_local')==='1'}catch(e){}showAuth(!loc);return}
- showAuth(false);ref=doc(fdb,'users',u.uid);
- try{const sn=await getDoc(ref);const remote=sn.exists()&&sn.data().data?JSON.parse(sn.data().data):null;
-  const localHas=D.tx.length||D.fix.length||+D.sal;
-  if(!remote){await push();say('Compte relié : tes données sont maintenant en ligne.')}
-  else if(localHas&&D.uid!==u.uid&&JSON.stringify(remote)!==JSON.stringify(D)){pendingRemote=remote;$$('auth').hidden=false;$$('authForm').hidden=true;$$('authChoice').hidden=false;return}
-  else apply(remote);
-  D.uid=u.uid;try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}listen();
- }catch(e){say('Connexion à la base impossible : '+msgOf(e),1)}});
-$$('cRemote').onclick=()=>{apply(pendingRemote);D.uid=auth.currentUser.uid;showAuth(false);listen();say('Données du compte chargées.')};
-$$('cLocal').onclick=async()=>{D.uid=auth.currentUser.uid;try{await push();showAuth(false);listen();say('Données de cet appareil envoyées sur ton compte.')}catch(e){$$('aerr').textContent=msgOf(e)}};
+onAuthStateChanged(auth,async u=>{acctUI(u);curUser=u;
+ if(!u){ref=null;ready=false;unsub&&unsub();unsub=null;let loc=0;try{loc=localStorage.getItem('mb_local')==='1'}catch(e){}showAuth(!loc);return}
+ showAuth(false);ref=doc(fdb,'users',u.uid);initSync()});
+$$('cRemote').onclick=()=>{bkLocal(JSON.stringify(D));apply(pendingRemote.remote);baseAt=pendingRemote.at;D.uid=curUser.uid;ready=true;showAuth(false);listen();say('Données du compte chargées.')};
+$$('cLocal').onclick=async()=>{D.uid=curUser.uid;try{ready=true;await push(true);showAuth(false);listen();say('Données de cet appareil envoyées sur ton compte.')}catch(e){$$('aerr').textContent=msgOf(e)}};
+$$('verBtn').onclick=async()=>{const box=$$('verList');box.innerHTML='<div class="note">Chargement…</div>';let items=[];
+ try{if(ref){const sn=await getDoc(ref);const cur=sn.exists()?sn.data():null;if(cur){items.push({src:'Compte (actuelle)',at:cur.at,data:cur.data});(cur.hist||[]).forEach(h=>items.push({src:'Compte',at:h.at,data:h.data}))}}}catch(e){}
+ try{JSON.parse(localStorage.getItem(K+'_bk')||'[]').forEach(h=>items.push({src:'Cet appareil',at:h.at,data:h.data}))}catch(e){}
+ if(!items.length){box.innerHTML='<div class="note">Aucune version enregistrée pour l\'instant.</div>';return}
+ box.innerHTML=items.map((it,i)=>{let d;try{d=JSON.parse(it.data)}catch(e){d={}}return`<div class="note" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span><b>${new Date(it.at||0).toLocaleString('fr-FR')}</b> · ${it.src}<br>${sum(d)}</span><button class="btn ghost" type="button" data-v="${i}">Restaurer</button></div>`}).join('');
+ box.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{const it=items[+b.dataset.v];bkLocal(JSON.stringify(D));apply(JSON.parse(it.data));if(ref&&ready){try{await push(true)}catch(e){}}say('Version restaurée.');box.innerHTML=''})};
 async function go(fn,btn){const e=$$('ae').value.trim(),p=$$('ap').value;$$('aerr').textContent='';if(!e||!p){$$('aerr').textContent='Indique ton e-mail et ton mot de passe.';return}btn.disabled=true;try{await fn(auth,e,p)}catch(x){$$('aerr').textContent=msgOf(x)}btn.disabled=false}
 $$('acctLink').onclick=async()=>{try{const pr=new GoogleAuthProvider();pr.setCustomParameters({prompt:'select_account'});const r=await linkWithPopup(auth.currentUser,pr);acctUI(r.user);say('Compte Google relié : connecte-toi avec Google ou par e-mail, ce sont les mêmes données.')}catch(x){say(msgOf(x),1)}};
 $$('aGoogle').onclick=async()=>{const b=$$('aGoogle');$$('aerr').textContent='';b.disabled=true;try{const pr=new GoogleAuthProvider();pr.setCustomParameters({prompt:'select_account'});await signInWithPopup(auth,pr)}catch(x){$$('aerr').textContent=msgOf(x)}b.disabled=false};
